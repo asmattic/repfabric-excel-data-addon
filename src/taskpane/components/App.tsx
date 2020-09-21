@@ -11,6 +11,7 @@ import "../../../assets/icon-80.png";
 
 import { IStackTokens, Stack } from "office-ui-fabric-react/lib/Stack";
 import { Dropdown, DropdownMenuItemType, IDropdownStyles, IDropdownOption } from "office-ui-fabric-react/lib/Dropdown";
+import { getWorksheetNames } from "../utils/index";
 
 const dropdownStyles: Partial<IDropdownStyles> = {
   dropdown: { width: 300 }
@@ -66,9 +67,11 @@ export interface AppState {
 const App: React.FC<AppProps> = ({ title, isOfficeInitialized }) => {
   const [items, setListItems] = React.useState({ listItems: [] });
   const [sheetToImport, setSheetToImport] = React.useState({ key: "", text: "" });
-
-  const onChange = event => {
-    setSheetToImport(event.target.value);
+  const [sheetVals, setSheetVals] = React.useState("Nothing Yet");
+  const [error, setError] = React.useState("No current errors");
+  const onChange = (event, item) => {
+    console.log("Event item", event, item);
+    setSheetToImport({ key: "BadgerContacts", text: "BadgerContacts" });
   };
 
   React.useEffect(() => {
@@ -90,36 +93,13 @@ const App: React.FC<AppProps> = ({ title, isOfficeInitialized }) => {
     });
   }, [items]);
 
-  const getWorksheetDataCopy = async sheetToImport => {
-    await Excel.run(async context => {
-      const sheet = context.workbook.worksheets.getItem(sheetToImport);
-      var largeRange = context.workbook.getSelectedRange();
-      largeRange.load(["rowCount", "columnCount"]);
-      await context.sync();
-
-      const range = sheet.getRange(`A2:A${largeRange.rowCount}`);
-      range.load("values");
-      await context.sync();
-
-      console.log("range", JSON.stringify(range.values, null, 4));
-      //console.log("Fuse", Fuse);
-      //const sheetCopy = context.workbook.worksheets.add("badger-company49759-copy");
-
-      //queueCommandsToCreateTemperatureTable(sheet);
-      //sheet.activate();
-
-      await context.sync();
-      //console.log("range", JSON.stringify(range.text, null, 4));
-    });
-  };
-
   const click = async () => {
     try {
-      await getWorksheetDataCopy(sheetToImport);
-      await Excel.run(async context => {
-        /**
-         * Insert your Excel code here
-         */
+      //const tempSheetVals = await getWorksheetData(sheetToImport.text);
+      const worksheetNames = await getWorksheetNames();
+      setSheetVals(JSON.stringify(worksheetNames, null, 4));
+      /*await Excel.run(async context => {
+       
         const range = context.workbook.getSelectedRange();
 
         // Read the range address
@@ -130,21 +110,23 @@ const App: React.FC<AppProps> = ({ title, isOfficeInitialized }) => {
 
         await context.sync();
         console.log(`The range address was ${range.address}.`);
-      });
+      });*/
     } catch (error) {
+      setSheetVals(JSON.stringify(error, null, 4));
+      setError(JSON.stringify(error, null, 4));
       console.error(error);
     }
   };
 
   if (!isOfficeInitialized) {
     return (
-      <Progress title={title} logo="assets/logo-filled.png" message="Please sideload your addin to see app body." />
+      <Progress title={title} logo="assets/repfabric-logo.png" message="Please sideload your addin to see app body." />
     );
   }
 
   return (
     <div className="ms-welcome">
-      <Header logo="assets/logo-filled.png" title={title} message="Repfabric" />
+      <Header logo="assets/repfabric-logo.png" title={title} message="Repfabric" />
       <HeroList message="Repfabric data conversion tools" items={items.listItems}>
         <Stack tokens={stackTokens}>
           <Dropdown
@@ -165,8 +147,12 @@ const App: React.FC<AppProps> = ({ title, isOfficeInitialized }) => {
           iconProps={{ iconName: "ChevronRight" }}
           onClick={click}
         >
-          Run
+          Run {sheetToImport?.text ?? "No sheet selected"}
         </Button>
+        <p className="ms-font-l">Error</p>
+        <code>{error}</code>
+        <p className="ms-font-l">SheetVals</p>
+        <p className="ms-font-l">{sheetVals}</p>
       </HeroList>
     </div>
   );

@@ -20,10 +20,11 @@ const render = Component => {
     document.getElementById("container")
   );
 };
-
+// update
 /* Render application after Office initializes */
 Office.initialize = () => {
   isOfficeInitialized = true;
+  OfficeExtension.config.extendedErrorLogging = true;
   render(App);
 };
 
